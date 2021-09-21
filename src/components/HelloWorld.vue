@@ -13,7 +13,12 @@ export default {
       theModel1: null, // 网格模型
       camera: null, // 相机
       renderer: null, // 渲染器
-      controls: null // 控制器
+      controls: null, // 控制器
+      curve: null,
+      progress: 0,
+      texture: null,
+      clock: null,
+      group: null
     }
   },
   methods: {
@@ -47,7 +52,7 @@ export default {
         0.1,
         10000
       )
-      this.camera.position.set(0, 50, 0)
+      this.camera.position.set(-250, 50, 50)
     },
     /**
      * 初始化渲染器
@@ -77,7 +82,8 @@ export default {
       this.controls.minDistance = 50
       // 视角最远距离
       this.controls.maxDistance = 2000
-
+      // 上下翻转的最大角度
+      this.controls.maxPolarAngle = 1.5
       // this.controls.maxPolarAngle = Math.PI / 2
       this.controls.target = new THREE.Vector3(50, 50, 0)
     },
@@ -88,6 +94,11 @@ export default {
       this.controls.update()
       this.renderer.render(this.scene, this.camera)
       requestAnimationFrame(this.animate)
+      // 设置纹理偏移
+      // this.texture.offset.x -= 0.06
+      var delta = this.clock.getDelta()
+
+      if (this.group) this.group.update(delta)
     },
     /**
      * 放置天空盒
@@ -108,32 +119,33 @@ export default {
       // 方法二
 
       // new THREE.CubeTextureLoader().load(urls, (oj) => {
-      //   console.log(65)
-      //   // skyboxCubemap.format = THREE.RGBFormat
+      // console.log(65)
+      // const skyboxCubemap = {}
+      // skyboxCubemap.format = THREE.RGBFormat
 
-      //   const skyboxShader = THREE.ShaderLib.cube
-      //   console.log(skyboxShader.uniforms)
-      //   // skyboxShader.uniforms.tCube = {}
-      //   // skyboxShader.uniforms.tCube.value = skyboxCubemap
-      //   console.log(skyboxShader)
-      //   const obj = new THREE.Mesh(
-      //     new THREE.BoxGeometry(size, size, size),
-      //     new THREE.ShaderMaterial({
-      //       fragmentShader: skyboxShader.fragmentShader,
-      //       vertexShader: skyboxShader.vertexShader,
-      //       uniforms: {
-      //         tCube: {
-      //           value: {
-      //             format: THREE.RGBFormat
-      //           }
-      //         },
-      //         envMap: {
-      //           value: oj
-      //         }
-      //       },
-      //       depthWrite: false,
-      //       side: THREE.BackSide
-      //     })
+      // const skyboxShader = THREE.ShaderLib.cube
+      // console.log(skyboxShader.uniforms)
+      // skyboxShader.uniforms.tCube = {}
+      // skyboxShader.uniforms.tCube.value = skyboxCubemap
+      // console.log(skyboxShader)
+      // const obj = new THREE.Mesh(
+      //   new THREE.BoxGeometry(size, size, size),
+      // new THREE.ShaderMaterial({
+      //   fragmentShader: skyboxShader.fragmentShader,
+      //   vertexShader: skyboxShader.vertexShader,
+      //   uniforms: {
+      //     tCube: {
+      //       value: {
+      //         format: THREE.RGBFormat
+      //       }
+      //     },
+      //     envMap: {
+      //       value: oj
+      //     }
+      //   },
+      //   depthWrite: false,
+      //   side: THREE.BackSide
+      // })
       //   )
       //   console.log(obj)
       //   this.scene.add(obj)
@@ -147,6 +159,7 @@ export default {
      * 创建网格模型
      */
     createMesh () {
+      this.clock = new THREE.Clock()
       // 加载模型路径
       const MODEL_PATH = this.objUrl
       // 加载模型
@@ -187,10 +200,33 @@ export default {
             // 模型位置改变
             this.theModel1.position.set(0, 0, 0)
             // 模型大小改变
-            const smallNnm = 0.08
+            const smallNnm = 0.05
             this.theModel1.scale.set(smallNnm, smallNnm, smallNnm)
             this.theModel1.rotateX(-Math.PI / 2)
-            this.scene.add(this.theModel1)
+            console.log(this.theModel1.size)
+            this.group = new THREE.Group()
+            this.group.add(this.theModel1)
+            // this.scene.add(this.theModel1)
+            this.scene.add(this.group)
+            setTimeout(() => {
+              setInterval(() => {
+                if (this.progress > 1.0) {
+                  return // 停留在管道末端,否则会一直跑到起点 循环再跑
+                }
+                this.progress += 0.0009
+                // console.log(this.progress)
+                console.log(this.curve)
+                if (this.curve) {
+                  const point = this.curve.getPoint(this.progress)
+                  const point1 = this.curve.getPoint(this.progress + 0.001)
+                  console.log(point)
+                  if (point && point.x) {
+                    this.group.position.set(point.x, point.y, point.z)
+                    this.group.lookAt(point1.x, point1.y, point1.z)
+                  }
+                }
+              })
+            })
           })
           // var material = new THREE.MeshLambertMaterial({ color: 0x5c3a21 })
           // const material = new THREE.MeshPhongMaterial({ color: 0x5c3a21 })
@@ -201,6 +237,86 @@ export default {
         }
       )
     },
+    /*
+    创建地板/跑道
+    */
+    createFloor () {
+      const loader = new THREE.TextureLoader()
+      loader.load(require('@/assets/img//skybox/远山_DN.jpg'), (texture) => {
+      // wrapS是x轴方向的行为，wrapT是y轴方向的行为
+        // texture.wrapS = texture.wrapT = THREE.RepeatWrapping// THREE.RepeatWrapping:允许重复自己
+        // texture.repeat.set(10, 10)
+        const floorGeometry = new THREE.BoxGeometry(1000, 5, 1000)
+        const floorMaterial = new THREE.MeshBasicMaterial({
+          map: texture
+        })
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial)
+        floor.name = '地面草地'
+        floor.scale.set(10, 1, 20)
+        // floor.rotateY(-Math.PI / 2)
+        floor.position.set(0, -15, 0)
+        this.scene.add(floor)
+      })
+      loader.load(require('@/assets/img/跑道.png'), (texture) => {
+      // wrapS是x轴方向的行为，wrapT是y轴方向的行为
+        // texture.wrapS = texture.wrapT = THREE.RepeatWrapping// THREE.RepeatWrapping:允许重复自己
+        // texture.repeat.set(10, 10)
+        const floorGeometry = new THREE.BoxGeometry(30, 5, 100)
+        const floorMaterial = new THREE.MeshBasicMaterial({
+          map: texture
+        })
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial)
+        floor.name = '地面'
+        floor.scale.set(10, 1, 20)
+        floor.rotateY(-Math.PI / 2)
+        floor.position.set(850, -10, 0)
+        this.scene.add(floor)
+      })
+    },
+    /**
+     * 创建管道
+     *
+    */
+    createCube () {
+      /**
+     * 创建一个设置重复纹理的管道
+     */
+      this.curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-80, -40, 0),
+        new THREE.Vector3(-70, 40, 0),
+        new THREE.Vector3(70, 40, 0),
+        new THREE.Vector3(80, -40, 0)
+      ], false/* 是否闭合 */)
+      var tubeGeometry = new THREE.TubeGeometry(this.curve, 100, 0.6, 50, false)
+      var textureLoader = new THREE.TextureLoader()
+      const texture = textureLoader.load(require('@/assets/img/logo.png'))
+      // 设置阵列模式为 RepeatWrapping
+      texture.wrapS = THREE.RepeatWrapping
+      texture.wrapT = THREE.RepeatWrapping
+      // 设置x方向的偏移(沿着管道路径方向)，y方向默认1
+      // 等价texture.repeat= new THREE.Vector2(20,1)
+      texture.repeat.x = 20
+      var tubeMaterial = new THREE.MeshPhongMaterial({
+        map: texture,
+        transparent: true
+      })
+      this.texture = texture
+      var tube = new THREE.Mesh(tubeGeometry, tubeMaterial)
+      this.scene.add(tube)
+      /**
+     * 创建一个半透明管道
+     */
+      var tubeGeometry2 = new THREE.TubeGeometry(this.curve, 100, 2, 50, false)
+      var tubeMaterial2 = new THREE.MeshPhongMaterial({
+        color: 0x4488ff,
+        transparent: true,
+        opacity: 0.3
+      })
+      var tube2 = new THREE.Mesh(tubeGeometry2, tubeMaterial2)
+      this.scene.add(tube2)
+
+      this.scene.add(new THREE.AxesHelper(300))
+    },
     /**
      * 全部初始化
      */
@@ -208,10 +324,13 @@ export default {
       this.initScene()
       this.initLight()
       this.addSkybox(1000)
+      this.createFloor()
       this.createMesh()
+      this.createCube()
       this.initCamera()
       // 天空盒
       // addSkybox(10000, this.scene);
+
       this.initRenderer()
       this.initControls()
       this.animate()
@@ -219,47 +338,47 @@ export default {
     /**
      * 点击模型
      */
-    clickModel (event) {
-      // 清空之前选中的模型信息
-      this.selectedObjects = {}
-      const raycaster = new THREE.Raycaster()
-      const mouse = new THREE.Vector2()
-      // 获取container元素的左边距和上边距
-      const leftDistance = getOffsetLeft(this.container, true)
-      const topDistance = getOffsetTop(this.container, true)
-      // 获取相对于浏览器位置的鼠标坐标
-      let x, y
-      if (event.changedTouches) {
-        x = event.changedTouches[0].pageX
-        y = event.changedTouches[0].pageY
-      } else {
-        x = event.clientX
-        y = event.clientY
-      }
-      // 将相对于浏览器位置的鼠标坐标转换成画布中的坐标（去除container元素的上边距和左边距）
-      mouse.x = ((x - leftDistance) / this.containerWidth) * 2 - 1
-      mouse.y = -((y - topDistance) / this.containerHeight) * 2 + 1
-      // 设置射线的角度
-      raycaster.setFromCamera(mouse, this.camera)
-      // 获取射线中的所有模型
-      const intersects = raycaster.intersectObjects([this.scene], true)
-      if (isEmpty(intersects)) return
-      // 获取射线中的第一个模型(用户点击的模型)并获取详情
-      const firstObj = intersects[0].object
-      // 点击的模型是否为商品
-      if (!isEmpty(firstObj.goodsInfo)) {
-        this.selectedObjects.goodsInfo = cloneDeep(firstObj.goodsInfo)
-      }
-      // 点击的模型是否为货架
-      else if (!isEmpty(firstObj.shelfInfo)) {
-        this.selectedObjects.shelfInfo = cloneDeep(firstObj.shelfInfo)
-      }
-      // 点击的模型是否为设施
-      else if (!isEmpty(firstObj.name)) {
-        this.selectedObjects.others = firstObj.name
-      }
-      this.$forceUpdate()
-    },
+    // clickModel (event) {
+    //   // 清空之前选中的模型信息
+    //   this.selectedObjects = {}
+    //   const raycaster = new THREE.Raycaster()
+    //   const mouse = new THREE.Vector2()
+    //   // 获取container元素的左边距和上边距
+    //   const leftDistance = getOffsetLeft(this.container, true)
+    //   const topDistance = getOffsetTop(this.container, true)
+    //   // 获取相对于浏览器位置的鼠标坐标
+    //   let x, y
+    //   if (event.changedTouches) {
+    //     x = event.changedTouches[0].pageX
+    //     y = event.changedTouches[0].pageY
+    //   } else {
+    //     x = event.clientX
+    //     y = event.clientY
+    //   }
+    //   // 将相对于浏览器位置的鼠标坐标转换成画布中的坐标（去除container元素的上边距和左边距）
+    //   mouse.x = ((x - leftDistance) / this.containerWidth) * 2 - 1
+    //   mouse.y = -((y - topDistance) / this.containerHeight) * 2 + 1
+    //   // 设置射线的角度
+    //   raycaster.setFromCamera(mouse, this.camera)
+    //   // 获取射线中的所有模型
+    //   const intersects = raycaster.intersectObjects([this.scene], true)
+    //   if (isEmpty(intersects)) return
+    //   // 获取射线中的第一个模型(用户点击的模型)并获取详情
+    //   const firstObj = intersects[0].object
+    //   // 点击的模型是否为商品
+    //   if (!isEmpty(firstObj.goodsInfo)) {
+    //     this.selectedObjects.goodsInfo = cloneDeep(firstObj.goodsInfo)
+    //   }
+    //   // 点击的模型是否为货架
+    //   else if (!isEmpty(firstObj.shelfInfo)) {
+    //     this.selectedObjects.shelfInfo = cloneDeep(firstObj.shelfInfo)
+    //   }
+    //   // 点击的模型是否为设施
+    //   else if (!isEmpty(firstObj.name)) {
+    //     this.selectedObjects.others = firstObj.name
+    //   }
+    //   this.$forceUpdate()
+    // },
     /**
      * 窗口变动触发的方法
      */
@@ -289,7 +408,7 @@ export default {
     // 监听窗口的大小改变
     window.onresize = this.onWindowResize
     // 仅监听3D部分的模型点击事件
-    this.container.addEventListener('click', this.clickModel, false)
+    // this.container.addEventListener('click', this.clickModel, false)
   },
   watch: {
     loading: {
