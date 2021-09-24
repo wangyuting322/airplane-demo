@@ -40,17 +40,17 @@ export default {
     };
   },
   methods: {
-    // initStats() {
-    //   //stats对象初始化
-    //   this.stats = new Stats();
-    //   this.stats.domElement.style.position = "absolute"; //绝对坐标
-    //   this.stats.domElement.style.left = "0px"; // (0,0)px,左上角
-    //   this.stats.domElement.style.top = "0px";
-    //   document
-    //     .querySelector(".canvas-frame")
-    //     .appendChild(this.stats.domElement);
-    //   // document.body.appendChild(this.stats.domElement)
-    // },
+    initStats() {
+      //stats对象初始化
+      this.stats = new Stats();
+      this.stats.domElement.style.position = "absolute"; //绝对坐标
+      this.stats.domElement.style.left = "0px"; // (0,0)px,左上角
+      this.stats.domElement.style.top = "0px";
+      document
+        .querySelector(".canvas-frame")
+        .appendChild(this.stats.domElement);
+      // document.body.appendChild(this.stats.domElement)
+    },
     /**
      * 初始化场景
      */
@@ -113,6 +113,18 @@ export default {
       this.controls.maxDistance = 5000;
       // 上下翻转的最大角度
       this.controls.maxPolarAngle = 1.5;
+//       this.controls.mouseButtons = {
+// 	LEFT: THREE.MOUSE.ROTATE,
+// 	MIDDLE: THREE.MOUSE.DOLLY,
+// 	// RIGHT: THREE.MOUSE.RIGHT
+// 	RIGHT: null
+// }
+// this.controls.enablePan=true;// 允许平移 只有这个设为true时，下面两个参数才有意义
+
+// this.controls.hylMovePanY=false;//关闭垂直平移相机
+
+// this.controls.hylMovePanX=true;// 开启水平移动相机
+
       // this.controls.maxPolarAngle = Math.PI / 2
       //   this.controls.target = new THREE.Vector3(50, 50, 0);
     },
@@ -239,6 +251,7 @@ export default {
             document.body.appendChild(canvas);
             // canvas画布可以理解为一张图片
             var texture = track(new THREE.CanvasTexture(canvas));
+            document.body.removeChild(canvas)
             // 创建精灵材质对象SpriteMaterial
             var spriteMaterial = track(
               new THREE.SpriteMaterial({
@@ -401,7 +414,7 @@ export default {
       this.createFloor();
       this.createMesh();
       this.createCube();
-      this.initMouse();
+    //   this.initMouse();
       this.initCamera();
       this.initRenderer();
       this.initControls();
@@ -516,7 +529,6 @@ export default {
     // this.scene.add(axesHelper);
     // 监听窗口的大小改变
     window.onresize = this.onWindowResize;
-    console.log(this.$beforeDestroy);
     // 仅监听3D部分的模型点击事件
     // this.container.addEventListener("click", this.clickModel, false);
     window.addEventListener("beforeunload", (e)=> {
