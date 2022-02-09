@@ -7,6 +7,7 @@ import {
 } from '@/utils/common.js'
 import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 // import Stats from "three/examples/js/libs/stats.min.js";
 const OrbitControls = require('three-orbit-controls')(THREE)
 
@@ -19,6 +20,7 @@ export default {
   data () {
     return {
       objUrl: './11803_Airplane_v1_l1.obj', // 模型地址
+      mtlUrl: './11803_Airplane_v1_l1.mtl', // 贴图地址
       container: null, // 画布容器
       scene: null, // 场景
       theModel1: null, // 网格模型
@@ -27,18 +29,16 @@ export default {
       controls: null, // 控制器
       curve: null,
       progress: 0,
-      texture: null,
       clock: null,
       timer: null,
       mixer: null,
-      AnimationAction: null,
       stats: null,
       planeInfo: null,
       animationTimer: null,
       raycaster: null,
       mouse: null,
       isNeedStats: false,
-      isNeedProperty: false
+      isNeedProperty: true
     }
   },
   methods: {
@@ -184,59 +184,27 @@ export default {
      */
     createMesh () {
       this.clock = new THREE.Clock()
-      // 加载模型路径
-      const MODEL_PATH = this.objUrl
-      // 加载模型
-      const loader = new OBJLoader()
-      loader.load(
-        MODEL_PATH,
-        loadedMesh => {
-          // 加载图片贴图
-          const loader1 = new THREE.TextureLoader()
-          loader1.load(require('@/assets/img/airplane_body.jpg'), texture => {
-            const bodymaterial = new THREE.MeshPhongMaterial({
-              map: texture,
-              color: 0xe3e4df
-            })
-            const othermaterial = new THREE.MeshPhongMaterial({
-              color: 0xe3e4df
-            })
+      const mtlLoader = new MTLLoader()
+      // 加载模型的贴图
+      mtlLoader.load(this.mtlUrl, materials => {
+        materials.preload()
+        // 加载模型路径
+        const MODEL_PATH = this.objUrl
+        // 加载模型
+        const loader = new OBJLoader()
+        loader.setMaterials(materials).load(
+          MODEL_PATH,
+          loadedMesh => {
+            // 加载图片贴图
 
-            const wheelmaterial = new THREE.MeshPhongMaterial({
-              color: 0x000000
-            })
-            // 加载完obj文件是一个场景组，遍历它的子元素，赋值纹理并且更新面和点的发现了
-            loadedMesh.children.forEach(child => {
-              if (
-                [
-                  '11803_Airplane_body',
-                  '11803_Airplane_wing_details_L',
-                  '11803_Airplane_wing_details_R'
-                ].includes(child.name)
-              ) {
-                child.material = bodymaterial
-                // child.geometry.computeFaceNormals()
-                // child.geometry.computeVertexNormals()
-              } else if (
-                [
-                  '11803_Airplane_wing_holder_L',
-                  '11803_Airplane_wing_holder_R'
-                ].includes(child.name)
-              ) {
-                child.material = wheelmaterial
-              } else {
-                child.material = othermaterial
-              }
-            })
             // themodel为加载的模型实例
             this.theModel1 = loadedMesh
-            // 模型位置改变
-            this.theModel1.position.set(0, 0, 0)
             // 模型大小改变
             const smallNnm = 0.05
             this.theModel1.scale.set(smallNnm, smallNnm, smallNnm)
             this.theModel1.rotateX(-Math.PI / 2)
-
+            // 模型位置改变
+            this.theModel1.position.set(0, 10, 0)
             /**
              * 创建点精灵模型
              */
@@ -247,8 +215,8 @@ export default {
             this.theModel1.traverse(item => {
               // 修改精灵模型大小
               if (item instanceof THREE.Sprite) {
-                item.translateZ(1000)
-                item.scale.set(1000, 600, 200)
+                item.scale.set(800, 500, 1)
+                item.translateZ(600)
               }
               //   添加航班信息
               item.info = {
@@ -258,11 +226,11 @@ export default {
               }
             })
           })
-        },
-        undefined,
-        function (error) {
-          console.log(error, 'error')
-        }
+      },
+      undefined,
+      function (error) {
+        console.log(error, 'error')
+      }
       )
     },
     /*
@@ -270,30 +238,31 @@ export default {
     */
     createFloor () {
       const loader = new THREE.TextureLoader()
-      loader.load(require('@/assets/img//skybox/远山_DN.jpg'), texture => {
-        // wrapS是x轴方向的行为，wrapT是y轴方向的行为
-        // texture.wrapS = texture.wrapT = THREE.RepeatWrapping// THREE.RepeatWrapping:允许重复自己
-        // texture.repeat.set(10, 10)
-        const floorGeometry = new THREE.BoxGeometry(2000, 5, 2000)
-        const floorMaterial = new THREE.MeshBasicMaterial({
-          map: texture
-        })
-        const floor = new THREE.Mesh(floorGeometry, floorMaterial)
-        floor.name = '地面草地'
-        floor.scale.set(10, 1, 20)
-        floor.position.set(0, -15, 0)
-        this.scene.add(floor)
-      })
+      // loader.load(require('@/assets/img//skybox/远山_DN.jpg'), texture => {
+      //   // wrapS是x轴方向的行为，wrapT是y轴方向的行为
+      //   // texture.wrapS = texture.wrapT = THREE.RepeatWrapping// THREE.RepeatWrapping:允许重复自己
+      //   // texture.repeat.set(10, 10)
+      //   const floorGeometry = new THREE.BoxGeometry(2500, 5, 2500)
+      //   const floorMaterial = new THREE.MeshBasicMaterial({
+      //     map: texture
+      //   })
+      //   const floor = new THREE.Mesh(floorGeometry, floorMaterial)
+      //   floor.name = '地面草地'
+      //   floor.scale.set(3, 1, 2)
+      //   floor.position.set(0, -2.5, 0)
+      //   this.scene.add(floor)
+      // })
       loader.load(require('@/assets/img/跑道.png'), texture => {
-        const roadGeometry = new THREE.BoxGeometry(30, 5, 100)
+        const roadGeometry = new THREE.BoxGeometry(259, 3, 1500)
         const roadMaterial = new THREE.MeshBasicMaterial({
           map: texture
+          // color: '0x4682b4'
         })
         const road = new THREE.Mesh(roadGeometry, roadMaterial)
         road.name = '跑道'
-        road.scale.set(10, 1, 20)
         road.rotateY(-Math.PI / 2)
-        road.position.set(850, -10, 0)
+        road.position.set(650, 0, 0)
+        console.log(road, road.position, this.scene)
         this.scene.add(road)
       })
     },
@@ -308,12 +277,19 @@ export default {
       this.curve = new THREE.CatmullRomCurve3(
         [
           new THREE.Vector3(0, 0, 0),
-          new THREE.Vector3(500, 100, 0),
-          new THREE.Vector3(1000, 400, 0),
-          new THREE.Vector3(2000, 470, 0),
-          new THREE.Vector3(3000, 400, 0),
-          new THREE.Vector3(3500, 100, 0),
-          new THREE.Vector3(4000, 0, 0)
+          new THREE.Vector3(100, 5, 0),
+          new THREE.Vector3(200, 15, 0),
+          new THREE.Vector3(300, 25, 0),
+          new THREE.Vector3(400, 45, 0),
+          new THREE.Vector3(500, 75, 0),
+          new THREE.Vector3(600, 105, 0),
+          new THREE.Vector3(700, 105, 0),
+          new THREE.Vector3(800, 75, 0),
+          new THREE.Vector3(900, 45, 0),
+          new THREE.Vector3(1000, 25, 0),
+          new THREE.Vector3(1100, 15, 0),
+          new THREE.Vector3(1200, 5, 0),
+          new THREE.Vector3(1300, 0, 0)// 只到1300，因为飞机的中心在1300处，机头约在1400处
         ],
         false /* 是否闭合 */
         // 'centripetal',
@@ -326,34 +302,22 @@ export default {
         30,
         false
       )
-      var textureLoader = new THREE.TextureLoader()
-      const texture = textureLoader.load(require('@/assets/img/logo.png'))
+      // var textureLoader = new THREE.TextureLoader()
+      // const texture = textureLoader.load(require('@/assets/img/logo.png'))
       // 设置阵列模式为 RepeatWrapping
-      texture.wrapS = THREE.RepeatWrapping
-      texture.wrapT = THREE.RepeatWrapping
+      // texture.wrapS = THREE.RepeatWrapping
+      // texture.wrapT = THREE.RepeatWrapping
       // 设置x方向的偏移(沿着管道路径方向)，y方向默认1
       // 等价texture.repeat= new THREE.Vector2(20,1)
-      texture.repeat.x = 20
+      // texture.repeat.x = 20
       var tubeMaterial = new THREE.MeshPhongMaterial({
-        map: texture,
-        transparent: true
+        // map: texture,
+        color: 0x4488ff,
+        // transparent: true,
+        opacity: 0.1
       })
-      this.texture = texture
       var tube = new THREE.Mesh(tubeGeometry, tubeMaterial)
       this.scene.add(tube)
-      /**
-       * 创建一个半透明管道
-       */
-      //   var tubeGeometry2 = new THREE.TubeGeometry(this.curve, 100, 2, 50, false)
-      //   var tubeMaterial2 = new THREE.MeshPhongMaterial({
-      //     color: 0x4488ff,
-      //     transparent: true,
-      //     opacity: 0.3
-      //   })
-      //   var tube2 = new THREE.Mesh(tubeGeometry2, tubeMaterial2)
-      //   this.scene.add(tube2)
-
-      //   this.scene.add(new THREE.AxesHelper(300))
     },
     /**
      * 鼠标点击 - 创建镭射
@@ -408,7 +372,8 @@ export default {
           this.progress += 0.0009
           const point = this.curve.getPoint(this.progress)
           if (point && point.x) {
-            this.theModel1.position.set(point.x, point.y, point.z)
+            // 位置加10，是因为要保持模型的高度偏移10，防止下陷
+            this.theModel1.position.set(point.x, (point.y + 10), point.z)
             // console.log(this.theModel1);
             // this.theModel1.lookAt(point.x, point.y, point.z);
             this.theModel1.rotation.set(-Math.PI / 2, 0, 0)
@@ -466,8 +431,20 @@ export default {
         this.renderer.clear()
         this.renderer.dispose()
         this.renderer.forceContextLoss()
-        cancelAnimationFrame(this.animationTimer)
         this.renderer = null
+        cancelAnimationFrame(this.animationTimer)
+        this.animationTimer = null
+        clearInterval(this.timer)
+        this.timer = null
+        this.container = null
+        this.theModel1 = null
+        this.camera = null
+        this.controls = null
+        this.curve = null
+        this.clock = null
+        this.mixer = null
+        this.stats = null
+        this.planeInfo = null
         console.log('ok')
       } catch (e) {
         console.log(e)
@@ -479,8 +456,8 @@ export default {
     this.container = document.querySelector('.container')
     // 初始化全部场景、灯光、相机、模型、渲染器、控制器等
     this.initAll()
-    // const axesHelper = new THREE.AxesHelper(1000);
-    // this.scene.add(axesHelper);
+    const axesHelper = new THREE.AxesHelper(1000)
+    this.scene.add(axesHelper)
     // 监听窗口的大小改变
     window.onresize = this.onWindowResize
     // 仅监听3D部分的模型点击事件
