@@ -202,9 +202,12 @@ export default {
             // 模型大小改变
             const smallNnm = 0.05
             this.theModel1.scale.set(smallNnm, smallNnm, smallNnm)
-            this.theModel1.rotateX(-Math.PI / 2)
+            // this.theModel1.rotateX(-Math.PI / 2)
+            // this.theModel1.rotation.set(Math.PI / 2, Math.PI, 0)
             // 模型位置改变
             this.theModel1.position.set(0, 10, 0)
+            this.theModel1.lookAt(0, (0 + 10) + Math.PI / 2, 0)
+            // this.theModel1.rotateX(-Math.PI / 2)
             /**
              * 创建点精灵模型
              */
@@ -261,6 +264,7 @@ export default {
         const road = new THREE.Mesh(roadGeometry, roadMaterial)
         road.name = '跑道'
         road.rotateY(-Math.PI / 2)
+
         road.position.set(650, 0, 0)
         console.log(road, road.position, this.scene)
         this.scene.add(road)
@@ -365,19 +369,25 @@ export default {
       this.progress = 0
       if (this.timer) clearInterval(this.timer)
       this.timer = setInterval(() => {
-        if (this.progress > 1.0) {
+        if (this.progress >= 1.0) {
+          clearInterval(this.timer)
+          const point2 = this.curve.getPoint(1)
+          this.theModel1.lookAt(point2.x, (point2.y + 10), point2.z)
+          this.theModel1.rotateX(-Math.PI / 2)
+          this.theModel1.rotateZ(-Math.PI / 2)
           return // 停留在管道末端,否则会一直跑到起点 循环再跑
         }
         if (this.curve && this.theModel1) {
-          this.progress += 0.0009
           const point = this.curve.getPoint(this.progress)
+          const point2 = this.curve.getPoint((this.progress + 0.0009 >= 1 ? 1 : (this.progress + 0.0009)))
           if (point && point.x) {
             // 位置加10，是因为要保持模型的高度偏移10，防止下陷
             this.theModel1.position.set(point.x, (point.y + 10), point.z)
-            // console.log(this.theModel1);
-            // this.theModel1.lookAt(point.x, point.y, point.z);
-            this.theModel1.rotation.set(-Math.PI / 2, 0, 0)
+            this.theModel1.lookAt(point2.x, (point2.y + 10), point2.z)
+            this.theModel1.rotateX(-Math.PI / 2)
+            this.theModel1.rotateZ(-Math.PI / 2)
           }
+          this.progress += 0.0009
         }
       })
     },
