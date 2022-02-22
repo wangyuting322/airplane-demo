@@ -206,8 +206,8 @@ export default {
             // this.theModel1.rotation.set(Math.PI / 2, Math.PI, 0)
             // 模型位置改变
             this.theModel1.position.set(0, 10, 0)
-            this.theModel1.lookAt(0, (0 + 10) + Math.PI / 2, 0)
-            // this.theModel1.rotateX(-Math.PI / 2)
+            this.theModel1.lookAt(0, (0 + 10), 0)
+            this.theModel1.rotateX(-Math.PI / 2)
             /**
              * 创建点精灵模型
              */
