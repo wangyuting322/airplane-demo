@@ -202,12 +202,9 @@ export default {
             // 模型大小改变
             const smallNnm = 0.05
             this.theModel1.scale.set(smallNnm, smallNnm, smallNnm)
-            // this.theModel1.rotateX(-Math.PI / 2)
-            // this.theModel1.rotation.set(Math.PI / 2, Math.PI, 0)
-            // 模型位置改变
-            this.theModel1.position.set(0, 10, 0)
-            this.theModel1.lookAt(0, (0 + 10), 0)
             this.theModel1.rotateX(-Math.PI / 2)
+            // 模型位置改变
+            this.theModel1.position.set(0, (0 + 10), 0)
             /**
              * 创建点精灵模型
              */
@@ -371,10 +368,6 @@ export default {
       this.timer = setInterval(() => {
         if (this.progress >= 1.0) {
           clearInterval(this.timer)
-          const point2 = this.curve.getPoint(1)
-          this.theModel1.lookAt(point2.x, (point2.y + 10), point2.z)
-          this.theModel1.rotateX(-Math.PI / 2)
-          this.theModel1.rotateZ(-Math.PI / 2)
           return // 停留在管道末端,否则会一直跑到起点 循环再跑
         }
         if (this.curve && this.theModel1) {
@@ -429,17 +422,19 @@ export default {
      * 清空内存
      */
     disposeAll () {
+      window.removeEventListener('resize', this.onWindowResize)
+      this.container && this.container.removeEventListener('click', this.clickModel)
       try {
         this.scene.traverse(item => {
           track(item)
         })
-        resMgr && resMgr.dispose()
+        resMgr && resMgr.dispose && resMgr.dispose()
         THREE.Cache.clear()
         this.scene = null
         this.raycaster = null
         this.mouse = null
         this.renderer.clear()
-        this.renderer.dispose()
+        this.renderer && this.renderer.dispose()
         this.renderer.forceContextLoss()
         this.renderer = null
         cancelAnimationFrame(this.animationTimer)
@@ -469,7 +464,8 @@ export default {
     const axesHelper = new THREE.AxesHelper(1000)
     this.scene.add(axesHelper)
     // 监听窗口的大小改变
-    window.onresize = this.onWindowResize
+    // window.onresize = this.onWindowResize
+    window.addEventListener('resize', this.onWindowResize)
     // 仅监听3D部分的模型点击事件
     if (this.isNeedProperty) {
       this.container.addEventListener('click', this.clickModel, false)
